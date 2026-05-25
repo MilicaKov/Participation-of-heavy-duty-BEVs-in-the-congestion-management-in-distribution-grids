@@ -27,8 +27,8 @@ mpl.rcParams.update({
     "ytick.labelsize": 11
 })
 
-#CONNECTION_MODE = "scaled"   # the connection capacity for the fleet increases with the fleet size
-CONNECTION_MODE = "fixed"   # connection capacity limited to one fleet node with 1 MVA.
+CONNECTION_MODE = "scaled"   # the connection capacity for the fleet increases with the fleet size
+#CONNECTION_MODE = "fixed"   # connection capacity limited to one fleet node with 1 MVA.
 
 
 
@@ -2022,9 +2022,8 @@ with pd.ExcelWriter("C:\\Users\\HP\\Desktop\\Code\\simulation_results.xlsx" , en
 
 
 
-# ==========================================================
 # PLOTTING
-# ==========================================================
+
 # COLORS
 
 COL_BASE = "#FFD84D"   # lemon yellow
@@ -2202,7 +2201,7 @@ axes[0].plot(fleet_capacity_MW, pv_base, marker="o", color=COL_BASE, label="Base
 axes[0].plot(fleet_capacity_MW, pv_tar, marker="o", color=COL_TAR, label="Tariff")
 axes[0].set_xlabel("Installed fleet charging capacity (MW)")
 axes[0].set_ylabel("PV curtailment (MWh)")
-axes[0].set_title("PV curtailment")
+axes[0].set_title("PV curtailment vs fleet capacity")
 axes[0].grid(True, alpha=0.3, color=GRID_COL)
 axes[0].legend(loc="upper left", frameon=False)
 
@@ -2210,23 +2209,23 @@ axes[1].plot(fleet_capacity_MW, unmet_base, marker="o", color=COL_BASE, label="B
 axes[1].plot(fleet_capacity_MW, unmet_tar, marker="o", color=COL_TAR, label="Tariff")
 axes[1].set_xlabel("Installed fleet charging capacity (MW)")
 axes[1].set_ylabel("Unmet charging demand (MWh)")
-axes[1].set_title("Unmet charging demand")
+axes[1].set_title("Unmet charging demand vs fleet capacity")
 axes[1].grid(True, alpha=0.3, color=GRID_COL)
 axes[1].legend(loc="upper left", frameon=False)
 
 axes[2].plot(fleet_capacity_MW, cong_improvement, marker="o", color=COL_CONG)
 axes[2].set_xlabel("Installed fleet charging capacity (MW)")
-axes[2].set_ylabel("Congestion reduction")
-axes[2].set_title("Tariff-induced congestion reduction")
+axes[2].set_ylabel("Normalized congestion reduction")
+axes[2].set_title("Congestion reduction due to tariff")
 axes[2].grid(True, alpha=0.3, color=GRID_COL)
 
 axes[3].plot(fleet_capacity_MW, flexibility, marker="o", color=COL_SHIFT)
 axes[3].set_xlabel("Installed fleet charging capacity (MW)")
-axes[3].set_ylabel("Tariff-induced charging shift (MWh)")
-axes[3].set_title("Tariff-induced charging shift")
+axes[3].set_ylabel("Charging shift (MWh)")
+axes[3].set_title("Charging shift vs fleet capacity")
 axes[3].grid(True, alpha=0.3, color=GRID_COL)
 
-# Apply ticks globally
+#Apply ticks globally
 for ax in axes:
     ax.set_xticks(fleet_capacity_MW)
 
@@ -2276,9 +2275,8 @@ def plot_system_impact(result, fleet_size):
     plt.tight_layout()
     plt.show()
 
-# -----------------------------------------
-# Compute fleet availability profile
-# -----------------------------------------
+#Computing the fleet availability profile
+
 def fleet_availability(truck_data, nT=24):
 
     availability = np.zeros(nT)
@@ -2298,9 +2296,9 @@ def fleet_availability(truck_data, nT=24):
 
     return availability
 
-# ----------------------------------------------------------
-# Storyline plot for one fleet size
-# ----------------------------------------------------------
+
+#Storyline plot for one fleet size
+
 def plot_storyline(result, fleet_size):
     if result is None:
         return
@@ -2312,7 +2310,7 @@ def plot_storyline(result, fleet_size):
         return
 
 
-    # Read hourly arrays safely
+
     pv_profile = np.array(data.get("pv", []), dtype=float)
     pv_base_hourly = pv_profile - np.array(data.get("pv_curt_base", []), dtype=float)
     pv_tar_hourly  = pv_profile - np.array(data.get("pv_curt_tar", []), dtype=float)
@@ -2339,7 +2337,7 @@ def plot_storyline(result, fleet_size):
     ens_base_hourly = np.array(data.get("ens_base", []), dtype=float)
     ens_tar_hourly  = np.array(data.get("ens_tar", []), dtype=float)
 
-    # Determine common length safely
+
     lengths = [
         len(base_load_only),
         len(pv_profile), len(pv_caseF), len(load_caseF),
@@ -2374,7 +2372,7 @@ def plot_storyline(result, fleet_size):
     thermal_caseF = thermal_caseF[:nT] if len(thermal_caseF) else np.zeros(nT)
     voltage_caseF = voltage_caseF[:nT] if len(voltage_caseF) else np.zeros(nT)
 
-    # Trim everything to same length
+   
     base_load_only = base_load_only[:nT] if len(base_load_only) else np.zeros(nT)
     pv_base_hourly = pv_base_hourly[:nT] if len(pv_base_hourly) else np.zeros(nT)
     pv_tar_hourly  = pv_tar_hourly[:nT] if len(pv_tar_hourly) else np.zeros(nT)
@@ -2394,280 +2392,108 @@ def plot_storyline(result, fleet_size):
     ens_base_hourly = ens_base_hourly[:nT] if len(ens_base_hourly) else np.zeros(nT)
     ens_tar_hourly  = ens_tar_hourly[:nT] if len(ens_tar_hourly) else np.zeros(nT)
     
-    # Convert to plotting units
-    pv_gen = pv_profile * MW
-    pv_base = pv_base_hourly * MW
-    pv_tar = pv_tar_hourly * MW
+    #plots
+    fig, axes = plt.subplots(6, 1, figsize=(14, 24), sharex=True)
+    for ax in axes:
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
     
-    load_caseF_total = (base_load_only + charge_caseF) * MW
-    load_base_total  = (base_load_only + charge_base) * MW
-    load_tar_total   = (base_load_only + charge_tar) * MW
-    
-    cong_caseF = thermal_caseF + voltage_caseF
-    cong_base  = thermal_base + voltage_base
-    cong_tar   = thermal_tar + voltage_tar
-    
-    charge_caseF_MW = charge_caseF * MW
-    charge_base_MW  = charge_base * MW
-    charge_tar_MW   = charge_tar * MW
-    
-    delta_base = charge_base_MW - charge_caseF_MW
-    delta_tar  = charge_tar_MW - charge_caseF_MW
+    #PV power: generation, used, curtailed
+    pv_gen = pv_profile[:nT]
+    pv_base = pv_base_hourly
+    pv_tar  = pv_tar_hourly
+
+    pv_gen = pv_gen * MW 
+    pv_base = pv_base * MW 
+    pv_tar = pv_tar * MW 
     
     Tplot = np.arange(1, nT + 1)
-   
 
-    # ============================================================
-    # FIGURE 1: GRID-LEVEL IMPACT
-    # ============================================================
 
-    fig1, axes = plt.subplots(
-        3, 1,
-        figsize=(11, 8),
-        sharex=True,
-        gridspec_kw={"height_ratios": [1.2, 1.2, 0.8]}
-    )
-    fig1.suptitle(
-        f"Grid-level impact of congestion-dependent DUoS tariff, fleet size = {fleet_size}",
-        fontsize=14,
-        y=0.98
-    )
-    
-    # 1) Total load
-    axes[0].step(
-        Tplot, load_caseF_total,
-        where="post",
-        color=COL_CASEF,
-        linestyle=":",
-        linewidth=2,
-        label="Uncontrolled"
-    )
-    axes[0].step(
-        Tplot, load_base_total,
-        where="post",
-        color=COL_BASE,
-        linestyle="--",
-        linewidth=2,
-        label="Baseline"
-        )
-    
-    axes[0].step(
-        Tplot, load_tar_total,
-        where="post",
-        color=COL_TAR,
-        linewidth=2,
-        label="Tariff"
-    )
-    axes[0].set_ylabel("Total load (MW)")
-    axes[0].set_title("Total feeder load")
-    axes[0].legend(loc="upper left", frameon=False, ncol=3)
+    axes[0].step(Tplot, pv_gen, where="post", color=COL_PV_GEN, linewidth=2.5, label="PV generation")
+    axes[0].step(Tplot, pv_base, where="post", color=COL_BASE, linestyle="--", label="PV used (baseline)")
+    axes[0].step(Tplot, pv_tar, where="post", color=COL_TAR, label="PV used (tariff)")
+    axes[0].set_ylabel("PV power (kW)")
+    axes[0].set_title(f"Fleet size = {fleet_size}")
+    axes[0].legend(loc="upper left", frameon=False)
+    #axes[0].grid(alpha=0.3, color=GRID_COL)
     axes[0].grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
     
-    # 2) Congestion
-    axes[1].step(
-        Tplot, cong_caseF[:nT],
-        where="post",
-        color=COL_CASEF,
-        linestyle=":",
-        linewidth=2,
-        label="Uncontrolled"
-    )
-    axes[1].step(
-        Tplot, cong_base[:nT],
-        where="post",
-        color=COL_BASE,
-        linestyle="--",
-        linewidth=2,
-        label="Baseline"
-    )
-    
-    axes[1].step(
-        Tplot, cong_tar[:nT],
-        where="post",
-        color=COL_TAR,
-        linewidth=2,
-        label="Tariff"
-    )
-    
-    axes[1].set_ylabel("Congestion index")
-    axes[1].set_title("Congestion index")
-    axes[1].legend(loc="upper left", frameon=False, ncol=3)
+
+
+    # Total load
+    load_caseF_total = base_load_only + charge_caseF
+    load_base_total = base_load_only + charge_base
+    load_tar_total  = base_load_only + charge_tar
+    load_caseF_total = (base_load_only + charge_caseF) * MW
+    load_base_total = (base_load_only + charge_base) * MW
+    load_tar_total  = (base_load_only + charge_tar) * MW
+    axes[1].step(Tplot, load_caseF_total, where="post", color=COL_CASEF, linestyle=":", label="Total load")
+    axes[1].step(Tplot, load_base_total, where="post", color=COL_BASE, linestyle="--", label="Total load (baseline)")
+    axes[1].step(Tplot, load_tar_total, where="post", color=COL_TAR, label="Total load (tariff)")
+    axes[1].set_ylabel("Total load (MW)")
+    axes[1].legend(loc="upper left", frameon=False)
+    #axes[1].grid(alpha=0.3, color=GRID_COL)
     axes[1].grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
-    
-    # 3) DUoS tariff signal
-    axes[2].step(
-        Tplot, lam,
-        where="post",
-        linewidth=2.5,
-        color=COL_TAR,
-        label=r"DUoS tariff $\lambda$"
-    )
-    
-    axes[2].set_ylabel(r"$\lambda$ (€/MWh)")
-    axes[2].set_xlabel("Hour")
-    axes[2].set_title("DUoS tariff signal")
+
+
+    #Congestion (thermal + voltage)
+
+
+    cong_caseF = thermal_caseF + voltage_caseF
+    cong_base = thermal_base + voltage_base
+    cong_tar = thermal_tar + voltage_tar
+    charge_base = charge_base * MW
+    charge_tar  = charge_tar * MW
+    charge_caseF = charge_caseF * MW
+
+    axes[2].step(Tplot, cong_caseF[:nT], where="post", color=COL_CASEF, linestyle=":", label="Case 1 congestion")
+    #axes[2].step(Tplot, cong_caseF[:nT], where="post", color=COL_CASEF, linestyle=":", label="ASAP congestion")
+    axes[2].step(Tplot, cong_base[:nT], where="post", color=COL_BASE, linestyle="--", label="Baseline congestion")
+    axes[2].step(Tplot, cong_tar[:nT], where="post", color=COL_TAR, label="Tariff congestion")
+    axes[2].set_ylabel("Congestion index")
     axes[2].legend(loc="upper left", frameon=False)
+    #axes[2].grid(alpha=0.3, color=GRID_COL)
     axes[2].grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
     
-    axes[-1].set_xticks(np.arange(1, nT + 1, 1))
+    #DUoS tariff signal
+    axes[3].step(Tplot, lam, where="post", linewidth=2.5, color=COL_TAR, label="DUoS tariff λ")
+    axes[3].set_ylabel("λ (€/MWh)")
+    axes[3].legend(loc="upper left", frameon=False)
+    #axes[3].grid(alpha=0.3, color=GRID_COL)
+    axes[3].grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
     
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.90, hspace=0.45)
-    plt.show()
-    
-    
-    # ============================================================
-    # FIGURE 2: FLEET-RESPONSE IMPACT
 
- 
-    fig2, axes = plt.subplots(
-        3, 1,
-        figsize=(11, 8),
-        sharex=True,
-        gridspec_kw={"height_ratios": [1.2, 1.3, 1.0]}
-    )
+    #Fleet charging profile
+    axes[4].step(Tplot, charge_caseF, where="post", color=COL_CASEF, linestyle=":", label="Uncontrolled charging")
+    axes[4].step(Tplot, charge_base, where="post", color=COL_BASE, linestyle="--", label="Baseline charging")
+    axes[4].step(Tplot, charge_tar, where="post", color=COL_TAR, label="Tariff charging")
+    axes[4].set_ylabel("Fleet charging (MW)")
+    axes[4].legend(loc="upper left", frameon=False)
+    axes[4].fill_between(Tplot,0,availability_norm * max(charge_tar),color="lightgrey",alpha=0.3,label="Fleet available")
+    axes[4].grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
+    axes[4].set_title("Fleet charging schedule and availability")
     
-    fig2.suptitle(
-        f"Fleet response to congestion-dependent DUoS tariff, fleet size = {fleet_size}",
-        fontsize=14,
-        y=0.98
-    )
-    
-    # 1) PV generation and utilization
-    axes[0].step(
-        Tplot, pv_gen,
-        where="post",
-        color=COL_PV_GEN,
-        linewidth=2.5,
-        label="PV generation"
-    )
-    axes[0].step(
-        Tplot, pv_base,
-        where="post",
-        color=COL_BASE,
-        linestyle="--",
-        linewidth=2,
-        label="PV used (baseline)"
-    )
-    axes[0].step(
-        Tplot, pv_tar,
-        where="post",
-        color=COL_TAR,
-        linewidth=2,
-        label="PV used (tariff)"
-    )
-    axes[0].set_ylabel("PV power (MW)")
-    axes[0].set_title("PV generation and utilization")
-    axes[0].legend(loc="upper left", frameon=False, ncol=3)
-    axes[0].grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
-    
-    
-    # 2) Fleet charging schedule
-    axes[1].step(
-        Tplot, charge_caseF_MW,
-        where="post",
-        color=COL_CASEF,
-        linestyle=":",
-        linewidth=2,
-        label="Uncontrolled"
-    )
-    
-    axes[1].step(
-        Tplot, charge_base_MW,
-        where="post",
-        color=COL_BASE,
-        linestyle="--",
-        linewidth=2,
-        label="Baseline"
-    )
-    axes[1].step(
-        Tplot, charge_tar_MW,
-        where="post",
-        color=COL_TAR,
-        linewidth=2,
-        label="Tariff"
-    )
-    
-    axes[1].fill_between(
-        Tplot,
-        0,
-        availability_norm * max(charge_tar_MW),
-        color="lightgrey",
-        alpha=0.3,
-        label="Fleet available"
-    )
-    axes[1].set_ylabel("Fleet charging (MW)")
-    axes[1].set_title("Fleet charging schedule and availability")
-    axes[1].legend(loc="upper left", frameon=False, ncol=4)
-    axes[1].grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
-    
-    # 3) Charging shift
+
+    #Charging shift relative to ASAP charging method
+
+    delta_base = charge_base - charge_caseF
+    delta_tar  = charge_tar  - charge_caseF
     width = 0.4
-    axes[2].bar(
-        Tplot - width / 2,
-        delta_base,
-        width=width,
-        color=COL_BASE,
-        label="Baseline"
-    )
-    axes[2].bar(
-        Tplot + width / 2,
-        delta_tar,
-        width=width,
-        color=COL_TAR,
-        label="Tariff"
-    )
-    
-    axes[2].axhline(0, color="black", linewidth=1)
-    axes[2].set_ylabel("Charging shift (MW)")
-    axes[2].set_xlabel("Hour")
-    axes[2].set_title("Charging shift relative to uncontrolled charging")
-    axes[2].legend(loc="upper left", frameon=False, ncol=2)
-    axes[2].grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
-    axes[-1].set_xticks(np.arange(1, nT + 1, 1))
-    
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.90, hspace=0.45)
-    plt.show()
+    axes[5].bar(Tplot - width/2, delta_base,width=width,color=COL_BASE,label="Baseline")
+    axes[5].bar(Tplot + width/2, delta_tar,width=width,color=COL_TAR,label="Tariff")
+    axes[5].axhline(0, color="black", linewidth=1)
+    axes[5].set_ylabel("Charging shift (MW)")
+    axes[5].set_xlabel("Hour")
+    axes[5].legend(frameon=False)
+    axes[5].grid(True, linestyle="--", linewidth=0.6, alpha=0.5)
 
+    axes[-1].set_xticks(np.arange(1, nT + 1, 1))
+    plt.tight_layout()
+    plt.subplots_adjust(hspace=0.8)
+    plt.show()
+    # Plot all fleet sizes safely
 
 for k in valid_sizes:
     plot_storyline(results[selected_cshort][k], k)
 
-
-
-
-
-def plot_cshort_sensitivity(results, fleet_size=4):
-
-    # ------------------------------------------------------
-    # Extract data across all C_SHORT values
-    # ------------------------------------------------------
-
-    c_values = sorted(results.keys())
-
-    congestion_resolved = []
-    final_soc = []
-    unmet_demand = []
-
-    for c in c_values:
-
-        r = results[c].get(fleet_size)
-
-        if r is None:
-            congestion_resolved.append(np.nan)
-            final_soc.append(np.nan)
-            unmet_demand.append(np.nan)
-            continue
-
-        congestion_resolved.append(
-            r.get("delta_cong", np.nan)
-        )
-
-        final_soc.append(
-            r.get("SOC_final", np.nan)
-        )
-
-        unmet_demand.append(
-            r.get("ENS", np)
-        )
