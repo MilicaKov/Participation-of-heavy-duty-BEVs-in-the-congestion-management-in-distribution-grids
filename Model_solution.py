@@ -43,7 +43,7 @@ V_MAX = 1.05**2 #upper limit
 
 # Congesition Weights
 W_TH = 1.0      # weight on thermal congestion 
-W_V  = 1.5      # weight on voltage congestion
+W_V  = 1.0      # weight on voltage congestion
 EPS_CONG = 1e-6 
 
 # Voltage normalization band
@@ -835,7 +835,6 @@ def build_model(include_network=True,
                 sum((m.price[t] + m.lambda_tar[t]) * m.Pd[d, t] * DELTA_T
                     for d in m.D for t in m.T)
                     + C_SHORT * sum(m.s_short[d] for d in m.D),
-                    #+ SOC_SLACK_PEN * sum(m.s_soc_abs[d, t] for d in m.D for t in m.T_NOT0),
                     sense=pyo.minimize
                 )
             if use_kkt:
